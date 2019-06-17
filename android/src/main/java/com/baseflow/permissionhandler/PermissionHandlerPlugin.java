@@ -266,38 +266,6 @@ public class PermissionHandlerPlugin implements MethodCallHandler {
       return isLocationServiceEnabled(context) ? SERVICE_STATUS_ENABLED : SERVICE_STATUS_DISABLED;
     }
 
-    if (permission == PERMISSION_GROUP_PHONE) {
-      PackageManager pm = context.getPackageManager();
-      if (!pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-        return SERVICE_STATUS_NOT_APPLICABLE;
-      }
-
-      TelephonyManager telephonyManager = (TelephonyManager) context
-          .getSystemService(Context.TELEPHONY_SERVICE);
-
-      if (telephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_NONE) {
-        return SERVICE_STATUS_NOT_APPLICABLE;
-      }
-
-      Intent callIntent = new Intent(Intent.ACTION_CALL);
-      callIntent.setData(Uri.parse("tel:123123"));
-      List<ResolveInfo> callAppsList = pm.queryIntentActivities(callIntent, 0);
-
-      if (callAppsList.isEmpty()) {
-        return SERVICE_STATUS_NOT_APPLICABLE;
-      }
-
-      if (telephonyManager.getSimState() != TelephonyManager.SIM_STATE_READY) {
-        return SERVICE_STATUS_DISABLED;
-      }
-
-      return SERVICE_STATUS_ENABLED;
-    }
-
-    if (permission == PERMISSION_GROUP_IGNORE_BATTERY_OPTIMIZATIONS) {
-      return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? SERVICE_STATUS_ENABLED : SERVICE_STATUS_NOT_APPLICABLE;
-    }
-
     return SERVICE_STATUS_NOT_APPLICABLE;
   }
 
@@ -391,14 +359,7 @@ public class PermissionHandlerPlugin implements MethodCallHandler {
       if (permission == PERMISSION_GROUP_UNKNOWN)
         continue;
 
-      if (permission == PERMISSION_GROUP_MICROPHONE) {
-        if (!mRequestResults.containsKey(PERMISSION_GROUP_MICROPHONE)) {
-          mRequestResults.put(PERMISSION_GROUP_MICROPHONE, toPermissionStatus(grantResults[i]));
-        }
-        if (!mRequestResults.containsKey(PERMISSION_GROUP_SPEECH)) {
-          mRequestResults.put(PERMISSION_GROUP_SPEECH, toPermissionStatus(grantResults[i]));
-        }
-      } else if (permission == PERMISSION_GROUP_LOCATION) {
+      if (permission == PERMISSION_GROUP_LOCATION) {
         final Context context = mRegistrar.activity() == null ? mRegistrar.activeContext() : mRegistrar.activity();
         final boolean isLocationServiceEnabled = context != null && isLocationServiceEnabled(context);
         @PermissionStatus int permissionStatus = toPermissionStatus(grantResults[i]);
