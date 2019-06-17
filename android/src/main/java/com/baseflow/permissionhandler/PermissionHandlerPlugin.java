@@ -41,7 +41,6 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 public class PermissionHandlerPlugin implements MethodCallHandler {
   private static final String LOG_TAG = "permissions_handler";
   private static final int PERMISSION_CODE = 24;
-  private static final int PERMISSION_CODE_IGNORE_BATTERY_OPTIMIZATIONS = 5672353;
 
   //PERMISSION_GROUP
   private static final int PERMISSION_GROUP_CAMERA = 0;
@@ -114,18 +113,6 @@ public class PermissionHandlerPlugin implements MethodCallHandler {
         } else {
           return false;
         }
-      }
-    });
-
-    registrar.addActivityResultListener(new ActivityResultListener() {
-      @Override
-      public boolean onActivityResult(int requestCode, int responseCode, Intent intent) {
-        if (requestCode == PERMISSION_CODE_IGNORE_BATTERY_OPTIMIZATIONS) {
-          permissionHandlerPlugin.handleIgnoreBatteryOptimizationsRequest(responseCode == Activity.RESULT_OK);
-          return true;
-        }
-
-        return false;
       }
     });
   }
@@ -221,20 +208,6 @@ public class PermissionHandlerPlugin implements MethodCallHandler {
     for (String name : names) {
       // Only handle them if the client app actually targets a API level greater than M.
       if (targetsMOrHigher) {
-        if (permission == PERMISSION_GROUP_IGNORE_BATTERY_OPTIMIZATIONS) {
-          String packageName = context.getPackageName();
-          PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-          // PowerManager.isIgnoringBatteryOptimizations has been included in Android M first.
-          if (VERSION.SDK_INT >= VERSION_CODES.M) {
-            if (pm.isIgnoringBatteryOptimizations(packageName)) {
-              return PERMISSION_STATUS_GRANTED;
-            } else {
-              return PERMISSION_STATUS_DENIED;
-            }
-          } else {
-            return PERMISSION_STATUS_RESTRICTED;
-          }
-        }
         final int permissionStatus = ContextCompat.checkSelfPermission(context, name);
         if (permissionStatus == PackageManager.PERMISSION_DENIED) {
           return PERMISSION_STATUS_DENIED;
@@ -325,15 +298,6 @@ public class PermissionHandlerPlugin implements MethodCallHandler {
           continue;
         }
 
-        if (permission == PERMISSION_GROUP_IGNORE_BATTERY_OPTIMIZATIONS) {
-          String packageName = mRegistrar.context().getPackageName();
-          Intent intent = new Intent();
-          intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-          intent.setData(Uri.parse("package:" + packageName));
-          mRegistrar.activity().startActivityForResult(intent, PERMISSION_CODE_IGNORE_BATTERY_OPTIMIZATIONS);
-        } else {
-          permissionsToRequest.addAll(names);
-        }
       } else {
         if (!mRequestResults.containsKey(permission)) {
           mRequestResults.put(permission, PERMISSION_STATUS_GRANTED);
@@ -380,18 +344,6 @@ public class PermissionHandlerPlugin implements MethodCallHandler {
         mRequestResults.put(permission, toPermissionStatus(grantResults[i]));
       }
     }
-
-    processResult();
-  }
-
-  private void handleIgnoreBatteryOptimizationsRequest(boolean granted) {
-    if (mResult == null) {
-      return;
-    }
-
-    int status = granted ? PERMISSION_STATUS_GRANTED : PERMISSION_STATUS_DENIED;
-
-    mRequestResults.put(PERMISSION_GROUP_IGNORE_BATTERY_OPTIMIZATIONS, status);
 
     processResult();
   }
